@@ -10,19 +10,19 @@ import sys
 import os
 
 from app.config import Config
-from app.database import db # Instância do banco de dados
+from app.database import db 
 
 class SPVAutomatico:
     def __init__(self, initial_filter=0):
         self.current_filter = initial_filter
-        self.driver = None # O driver será inicializado e fechado por chamada
+        self.driver = None 
 
     def _init_selenium_driver(self):
         """Inicializa o driver do Selenium para Selenoid."""
-        options = webdriver.ChromeOptions() # Usaremos Chrome no Selenoid
+        options = webdriver.ChromeOptions() 
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--headless") # Opcional: roda o navegador sem interface gráfica
+        options.add_argument("--headless") 
 
         try:
             self.driver = webdriver.Remote(
@@ -30,10 +30,9 @@ class SPVAutomatico:
                 options=options
             )
             print("Driver Selenium conectado ao Selenoid.")
-            # self.driver.set_page_load_timeout(30) # Opcional: Define tempo limite de carregamento da página
+            
         except Exception as e:
-            print(f"Erro ao conectar ao Selenoid: {e}")
-            # Em vez de sys.exit, podemos levantar uma exceção ou retornar False
+            print(f"Erro ao conectar ao Selenoid: {e}")            
             raise ConnectionError(f"Não foi possível conectar ao Selenoid: {e}")
 
     def _close_selenium_driver(self):
@@ -49,10 +48,10 @@ class SPVAutomatico:
         """
         cond_rg = ''
         if (self.current_filter == 1 or self.current_filter == 3):
-            # Usando IS NOT NULL e aspas simples para string vazia
+            
             cond_rg = ' AND p.rg IS NOT NULL AND p.rg <> \'\' '
 
-        # Usando f-string para injetar a parte condicional e %s para parâmetros seguros
+        
         sql = f"""
             SELECT
                 p.Cod_Cliente, p.Cod_Pesquisa, e.UF, p.Data_Entrada,
@@ -80,7 +79,7 @@ class SPVAutomatico:
             ORDER BY Nome ASC, Resultado DESC
             LIMIT %s OFFSET %s
         """
-        # Passando os parâmetros como uma tupla
+        
         params = (self.current_filter, limit, offset)
         return db.fetchall(sql, params)
 
@@ -90,7 +89,7 @@ class SPVAutomatico:
         Enquadra a pesquisa de acordo com o resultado obtido na pesquisa
         (Nada Consta, Consta Criminal e Consta Cível).
         """
-        final_result = 7 # Valor padrão para "Não categorizado" ou "Erro"
+        final_result = 7 
         if Config.NADA_CONSTA in site_content:
             final_result = 1
         elif (Config.CONSTA01 in site_content or Config.CONSTA02 in site_content) and \
@@ -106,12 +105,12 @@ class SPVAutomatico:
         Retorna o page_source se sucesso, None em caso de falha.
         """
         try:
-            self._init_selenium_driver() # Garante que o driver esteja ativo
+            self._init_selenium_driver() 
             self.driver.get("https://esaj.tjsp.jus.br/cpopg/open.do")
 
-            wait = WebDriverWait(self.driver, 30) # Aumenta o tempo de espera para elementos
+            wait = WebDriverWait(self.driver, 30) 
 
-            if search_type in [0, 1, 3]: # CPF/RG
+            if search_type in [0, 1, 3]: 
                 select_el = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="cbPesquisa"]')))
                 select_ob = Select(select_el)
                 select_ob.select_by_value('DOCPARTE')
@@ -119,12 +118,11 @@ class SPVAutomatico:
                 input_field = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="campo_DOCPARTE"]')))
                 input_field.send_keys(document)
 
-            elif search_type == 2: # Nome
+            elif search_type == 2: 
                 select_el = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="cbPesquisa"]')))
                 select_ob = Select(select_el)
                 select_ob.select_by_value('NMPARTE')
-
-                # Clicar em "pesquisarPorNomeCompleto" se necessário
+                
                 try:
                     full_name_checkbox = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="pesquisarPorNomeCompleto"]')))
                     full_name_checkbox.click()
@@ -135,16 +133,11 @@ class SPVAutomatico:
                 input_field = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="campo_NMPARTE"]')))
                 input_field.send_keys(document)
 
-            # Clicar no botão de consultar
+            
             wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="botaoConsultarProcessos"]'))).click()
 
-            # Aguarda um elemento da página de resultados para garantir que carregou
-            # Adapte este XPATH para um elemento que certeza que aparece na página de resultados
-            # Por exemplo, um título, uma tabela de resultados, ou a mensagem de "Nada Consta"
-            wait.until(EC.url_contains("cpopg/search.do")) # Ou um elemento visível na página de resultado
-            # O ideal é esperar por um elemento específico que só aparece *após* a busca.
-            # Por simplicidade, podemos esperar pela URL de resultado ou um curto time.sleep
-            time.sleep(2) # Pequena pausa para carregar o conteúdo, se a URL não for suficiente
+            wait.until(EC.url_contains("cpopg/search.do")) 
+            time.sleep(2) 
 
             return self.driver.page_source
 
@@ -153,10 +146,10 @@ class SPVAutomatico:
             return None
         except Exception as e:
             print(f"Erro ao carregar o site ou interagir com elementos: {e}")
-            # Logar o erro completo para depuração: traceback.print_exc()
+            
             return None
         finally:
-            self._close_selenium_driver() # Fecha o driver após cada busca para liberar recursos do Selenoid
+            self._close_selenium_driver() 
 
     def _insert_spv_result(self, cod_pesquisa, result, search_filter):
         """Insere o resultado da pesquisa no banco de dados."""
@@ -172,7 +165,7 @@ class SPVAutomatico:
             print(f"Resultado para Cod_Pesquisa {cod_pesquisa} inserido com sucesso.")
         except Exception as e:
             print(f"Erro ao inserir resultado para Cod_Pesquisa {cod_pesquisa}: {e}")
-            # logar o erro: traceback.print_exc()
+            
 
     def process_pesquisas(self):
         """
@@ -185,22 +178,22 @@ class SPVAutomatico:
 
         while True:
             print(f"Consultando pesquisas com filtro {self.current_filter}, offset {offset}...")
-            # Pega uma "página" de pesquisas
+            
             qry = self._get_pesquisas(offset, page_size)
 
             if not qry:
                 print(f"Nenhuma pesquisa encontrada para o filtro {self.current_filter} na página atual.")
-                break # Sai do loop se não houver mais dados
+                break 
 
             print(f"Processando {len(qry)} pesquisas...")
-            for dados in tqdm(qry): # tqdm para barra de progresso
+            for dados in tqdm(qry): 
                 codPesquisa = dados[1]
                 nome = dados[4]
                 cpf = dados[5]
                 rg = dados[6]
 
                 site_content = None
-                result_code = 7 # Default para erro ou não processado
+                result_code = 7 
 
                 try:
                     if self.current_filter == 0 and cpf:
@@ -211,9 +204,9 @@ class SPVAutomatico:
                         site_content = self._load_site(self.current_filter, nome)
                     else:
                         print(f"Dados insuficientes ou filtro incompatível para Cod_Pesquisa {codPesquisa} com filtro {self.current_filter}.")
-                        # Se não há dados válidos, insere um resultado de erro e continua
+                        
                         self._insert_spv_result(codPesquisa, result_code, self.current_filter)
-                        continue # Pula para a próxima pesquisa
+                        continue 
 
                     if site_content:
                         result_code = self._check_result(site_content)
@@ -228,14 +221,14 @@ class SPVAutomatico:
 
                 total_processed += 1
 
-            offset += page_size # Avança para a próxima página
+            offset += page_size 
 
         print(f"Total de pesquisas processadas para o filtro {self.current_filter}: {total_processed}")
 
 
     def run(self):
         """Orquestra o ciclo de vida da aplicação, iterando pelos filtros."""
-        max_filters = 3 # Exemplo: filtros 0, 1, 2, 3 (ajuste conforme a necessidade)
+        max_filters = 3 
         while True: # Loop infinito para manter o serviço em execução
             for f in range(max_filters + 1):
                 self.current_filter = f
@@ -243,4 +236,4 @@ class SPVAutomatico:
                 self.process_pesquisas()
 
             print("\nTodos os filtros foram processados. Aguardando para reiniciar o ciclo.")
-            time.sleep(300) # Aguarda 5 minutos antes de reiniciar o ciclo completo
+            time.sleep(300) 

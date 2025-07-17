@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv() # Carrega as variáveis do .env
+load_dotenv() 
 
 class Config:
     DB_HOST = os.getenv('DB_HOST')
@@ -13,4 +13,4 @@ class Config:
     NADA_CONSTA = 'Não existem informações disponíveis para os parâmetros informados.'
     CONSTA01 = 'Processos encontrados'
     CONSTA02 = 'Audiências'
-    # Adicionar outras constantes ou configurações aqui
+    

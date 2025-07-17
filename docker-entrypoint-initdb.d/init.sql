@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS pesquisa (
     Data_Conclusao TIMESTAMP,
     Nome VARCHAR(255),
     Nome_Corrigido VARCHAR(255),
-    CPF VARCHAR(14), -- Removido UNIQUE para permitir múltiplos registros, caso haja necessidade de pesquisa de histórico. Se for sempre único, pode voltar.
+    CPF VARCHAR(14), 
     RG VARCHAR(20),
     RG_Corrigido VARCHAR(20),
     Nascimento DATE,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS lote_pesquisa (
 
 -- Criação da tabela pesquisa_spv
 CREATE TABLE IF NOT EXISTS pesquisa_spv (
-    Cod_Pesquisa_SPV SERIAL PRIMARY KEY, -- Chave primária própria para esta tabela
+    Cod_Pesquisa_SPV SERIAL PRIMARY KEY, 
     Cod_Pesquisa INT REFERENCES pesquisa(Cod_Pesquisa),
     Cod_SPV INT, -- Assumindo que SPV é algum tipo de identificador, não uma FK ainda
     Cod_spv_computador INT,
@@ -84,7 +84,7 @@ INSERT INTO pesquisa (Cod_Cliente, Cod_Servico, Cod_UF, Data_Entrada, Nome, CPF,
 INSERT INTO pesquisa (Cod_Cliente, Cod_Servico, Cod_UF, Data_Entrada, Nome, CPF, RG, Nascimento, Mae, Anexo, Tipo, Cod_UF_Nascimento, Cod_UF_RG) VALUES
 (103, 1, (SELECT Cod_UF FROM estado WHERE UF = 'SP'), CURRENT_TIMESTAMP, 'Jose Santos', '333.333.333-33', NULL, '1975-11-10', 'Paula Santos', NULL, 0, (SELECT Cod_UF FROM estado WHERE UF = 'SP'), NULL) ON CONFLICT (CPF) DO NOTHING;
 
--- Inserções para a tabela pesquisa_spv (com Resultado NULL para serem pesquisadas)
+
 INSERT INTO pesquisa_spv (Cod_Pesquisa, Cod_SPV, Cod_spv_computador, Cod_Spv_Tipo, Resultado, Cod_Funcionario, filtro, website_id, Data_Registro) VALUES
 ((SELECT Cod_Pesquisa FROM pesquisa WHERE CPF = '111.111.111-11'), 1, 36, NULL, NULL, -1, 0, 1, CURRENT_TIMESTAMP) ON CONFLICT DO NOTHING;
 

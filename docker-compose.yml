@@ -21,7 +21,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-    # Removido o 'command' customizado aqui, confiando no ENTRYPOINT padrão da imagem Postgres
+    
 
   selenoid:
     image: aerokube/selenoid:latest-release
@@ -61,6 +61,6 @@ services:
 volumes:
   postgres_data:
 
-networks: # ESTE BLOCO DEVE ESTAR ALINHADO COM 'services:' e 'volumes:'
+networks: 
   spv_network:
     driver: bridge
