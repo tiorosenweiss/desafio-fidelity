@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: db_teste
+      POSTGRES_USER: usr_teste
+      POSTGRES_PASSWORD: teste
+      POSTGRES_ROOT_PASSWORD: root_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro # Certifique-se de que esta pasta existe e tem a grafia correta
+    networks:
+      - spv_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # Removido o 'command' customizado aqui, confiando no ENTRYPOINT padrão da imagem Postgres
+
+  selenoid:
+    image: aerokube/selenoid:latest-release
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./selenoid_config:/etc/selenoid:ro
+    ports:
+      - "4444:4444"
+    command: ["-listen", ":4444", "-conf", "/etc/selenoid/browsers.json"]
+    networks:
+      - spv_network
+
+  selenoid-ui:
+    image: aerokube/selenoid-ui
+    ports:
+      - "8080:8080"
+    command: ["--selenoid-uri", "http://selenoid:4444"]
+    networks:
+      - spv_network
+
+  spv_app:
+    build: .
+    environment:
+      DB_HOST: postgres
+      DB_USER: usr_teste
+      DB_PASSWORD: teste
+      DB_NAME: db_teste
+      SELENOID_HUB_URL: http://selenoid:4444/wd/hub
+    depends_on:
+      postgres:
+        condition: service_healthy
+      selenoid:
+        condition: service_started
+    networks:
+      - spv_network
+
+volumes:
+  postgres_data:
+
+networks: # ESTE BLOCO DEVE ESTAR ALINHADO COM 'services:' e 'volumes:'
+  spv_network:
+    driver: bridge
