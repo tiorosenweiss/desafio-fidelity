@@ -2,3 +2,5 @@ psycopg2-binary
 selenium
 tqdm
 python-dotenv
+pytest
+pytest-mock
